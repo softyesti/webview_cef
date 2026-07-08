@@ -88,9 +88,11 @@ target_compile_definitions(${PLUGIN_NAME} PRIVATE NOMINMAX)
 # Zero-copy GPU rendering: bridge CEF's OnAcceleratedPaint D3D11 shared texture
 # straight to a Flutter GPU surface texture (no CPU swizzle / upload). Turn OFF
 # to fall back to the software pixel-buffer path.
+#
+# The software pixel-buffer path will be used only in debug mode.
 option(WEBVIEW_CEF_GPU_TEXTURE "Use the zero-copy GPU texture rendering path" ON)
 if(WEBVIEW_CEF_GPU_TEXTURE)
-  target_compile_definitions(${PLUGIN_NAME} PRIVATE WEBVIEW_CEF_GPU_TEXTURE)
+  target_compile_definitions(${PLUGIN_NAME} PRIVATE $<$<NOT:$<CONFIG:Debug>>:WEBVIEW_CEF_GPU_TEXTURE>)
 endif()
 
 # Source include directories and library dependencies. Add any plugin-specific
