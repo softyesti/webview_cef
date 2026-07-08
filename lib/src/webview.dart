@@ -36,20 +36,25 @@ class WebViewController extends ValueNotifier<bool> {
   WebviewEventsListener? _listener;
   WebviewEventsListener? get listener => _listener;
 
-  get onJavascriptChannelMessage => (final String channelName,
-          final String message, final String callbackId, final String frameId) {
-        if (_javascriptChannels.containsKey(channelName)) {
-          _javascriptChannels[channelName]!.onMessageReceived(
-              JavascriptMessage(message, callbackId, frameId));
-        } else {
-          debugPrint('Channel "$channelName" is not exists');
-        }
-      };
+  Null Function(
+          String channelName, String message, String callbackId, String frameId)
+      get onJavascriptChannelMessage => (final String channelName,
+              final String message,
+              final String callbackId,
+              final String frameId) {
+            if (_javascriptChannels.containsKey(channelName)) {
+              _javascriptChannels[channelName]!.onMessageReceived(
+                  JavascriptMessage(message, callbackId, frameId));
+            } else {
+              debugPrint('Channel "$channelName" is not exists');
+            }
+          };
 
-  get onToolTip => _onToolTip;
-  get onCursorChanged => _onCursorChanged;
-  get onFocusedNodeChangeMessage => _onFocusedNodeChangeMessage;
-  get onImeCompositionRangeChangedMessage =>
+  dynamic Function(String)? get onToolTip => _onToolTip;
+  dynamic Function(int)? get onCursorChanged => _onCursorChanged;
+  dynamic Function(bool editable)? get onFocusedNodeChangeMessage =>
+      _onFocusedNodeChangeMessage;
+  dynamic Function(int, int, int)? get onImeCompositionRangeChangedMessage =>
       _onImeCompositionRangeChangedMessage;
 
   /// Initializes the underlying platform view.
@@ -74,7 +79,7 @@ class WebViewController extends ValueNotifier<bool> {
     return _creatingCompleter.future;
   }
 
-  setWebviewListener(WebviewEventsListener listener) {
+  void setWebviewListener(WebviewEventsListener listener) {
     _listener = listener;
   }
 
@@ -285,7 +290,7 @@ class WebView extends StatefulWidget {
   WebViewState createState() => WebViewState();
 }
 
-class WebViewState extends State<WebView> with WebeViewTextInput {
+class WebViewState extends State<WebView> with WebViewTextInput {
   final GlobalKey _key = GlobalKey();
   String _composingText = '';
   late final _focusNode = FocusNode();
@@ -347,8 +352,8 @@ class WebViewState extends State<WebView> with WebeViewTextInput {
 
     _controller._onImeCompositionRangeChangedMessage = (x, y, height) {
       final box = _key.currentContext!.findRenderObject() as RenderBox;
-      updateIMEComposionPosition(x.toDouble(), y.toDouble(), height.toDouble(),
-          box.localToGlobal(Offset.zero));
+      updateIMECompositionPosition(x.toDouble(), y.toDouble(),
+          height.toDouble(), box.localToGlobal(Offset.zero));
     };
 
     _controller._onToolTip = (final String text) {

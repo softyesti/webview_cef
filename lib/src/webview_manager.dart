@@ -17,14 +17,16 @@ class WebviewManager extends ValueNotifier<bool> {
   final MethodChannel pluginChannel = const MethodChannel("webview_cef");
 
   final Map<int, WebViewController> _webViews = <int, WebViewController>{};
-  final Map<int, InjectUserScripts?> _injectUserScripts = <int, InjectUserScripts>{};
+  final Map<int, InjectUserScripts?> _injectUserScripts =
+      <int, InjectUserScripts>{};
 
   final Map<int, WebViewController> _tempWebViews = <int, WebViewController>{};
-  final Map<int, InjectUserScripts?> _tempInjectUserScripts = <int, InjectUserScripts>{};
+  final Map<int, InjectUserScripts?> _tempInjectUserScripts =
+      <int, InjectUserScripts>{};
 
   int nextIndex = 1;
 
-  get ready => _creatingCompleter.future;
+  Future<void> get ready => _creatingCompleter.future;
 
   WebViewController createWebView({
     Widget? loading,
@@ -55,7 +57,7 @@ class WebviewManager extends ValueNotifier<bool> {
       } else {
         await pluginChannel.invokeMethod('init');
       }
-      pluginChannel.setMethodCallHandler(methodCallhandler);
+      pluginChannel.setMethodCallHandler(methodCallHandler);
       // Wait for the platform to complete initialization.
       await Future.delayed(const Duration(milliseconds: 300));
       _creatingCompleter.complete();
@@ -81,7 +83,7 @@ class WebviewManager extends ValueNotifier<bool> {
     _tempInjectUserScripts.remove(browserIndex);
   }
 
-  Future<void> methodCallhandler(MethodCall call) async {
+  Future<void> methodCallHandler(MethodCall call) async {
     switch (call.method) {
       case "urlChanged":
         int browserId = call.arguments["browserId"] as int;
@@ -107,7 +109,7 @@ class WebviewManager extends ValueNotifier<bool> {
         return;
       case 'javascriptChannelMessage':
         int browserId = call.arguments['browserId'] as int;
-        _webViews[browserId]?.onJavascriptChannelMessage?.call(
+        _webViews[browserId]?.onJavascriptChannelMessage.call(
             call.arguments['channel'] as String,
             call.arguments['message'] as String,
             call.arguments['callbackId'] as String,
@@ -126,7 +128,7 @@ class WebviewManager extends ValueNotifier<bool> {
       case 'onFocusedNodeChangeMessage':
         int browserId = call.arguments['browserId'] as int;
         bool editable = call.arguments['editable'] as bool;
-        _webViews[browserId]?.onFocusedNodeChangeMessage(editable);
+        _webViews[browserId]?.onFocusedNodeChangeMessage?.call(editable);
         return;
       case 'onImeCompositionRangeChangedMessage':
         int browserId = call.arguments['browserId'] as int;
@@ -139,27 +141,34 @@ class WebviewManager extends ValueNotifier<bool> {
         int browserId = call.arguments["browserId"] as int;
         String urlId = call.arguments["urlId"] as String;
 
-        await _injectUserScriptIfNeeds(browserId, _injectUserScripts[browserId]?.retrieveLoadStartInjectScripts() ?? []);
+        await _injectUserScriptIfNeeds(
+            browserId,
+            _injectUserScripts[browserId]?.retrieveLoadStartInjectScripts() ??
+                []);
 
         WebViewController controller =
-        _webViews[browserId] as WebViewController;
+            _webViews[browserId] as WebViewController;
         _webViews[browserId]?.listener?.onLoadStart?.call(controller, urlId);
         return;
       case 'onLoadEnd':
         int browserId = call.arguments["browserId"] as int;
         String urlId = call.arguments["urlId"] as String;
 
-        await _injectUserScriptIfNeeds(browserId, _injectUserScripts[browserId]?.retrieveLoadEndInjectScripts() ?? []);
+        await _injectUserScriptIfNeeds(
+            browserId,
+            _injectUserScripts[browserId]?.retrieveLoadEndInjectScripts() ??
+                []);
 
         WebViewController controller =
-        _webViews[browserId] as WebViewController;
+            _webViews[browserId] as WebViewController;
         _webViews[browserId]?.listener?.onLoadEnd?.call(controller, urlId);
         return;
       default:
     }
   }
 
-  Future<void> _injectUserScriptIfNeeds(int browserId, List<UserScript> scripts) async {
+  Future<void> _injectUserScriptIfNeeds(
+      int browserId, List<UserScript> scripts) async {
     if (scripts.isEmpty) return;
 
     await _webViews[browserId]?.ready;
